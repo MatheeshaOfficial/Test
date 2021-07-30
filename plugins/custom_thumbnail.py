@@ -25,17 +25,14 @@ from translation import Translation
 import pyrogram
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
-from helper_funcs.chat_base import TRChatBase
 
-
-@pyrogram.Client.on_message(pyrogram.Filters.command(["generatecustomthumbnail"]))
+@pyrogram.Client.on_message(pyrogram.filters.command(["generatecustomthumbnail"]))
 async def generate_custom_thumbnail(bot, update):
-    TRChatBase(update.from_user.id, update.text, "generatecustomthumbnail")
-    if str(update.from_user.id) not in Config.SUPER7X_DLBOT_USERS:
-        await bot.send_message(
+    if update.from_user.id in Config.BANNED_USERS:
+        await bot.delete_messages(
             chat_id=update.chat.id,
-            text=Translation.NOT_AUTH_USER_TEXT,
-            reply_to_message_id=update.message_id
+            message_ids=update.message_id,
+            revoke=True
         )
         return
     if update.reply_to_message is not None:
@@ -84,26 +81,16 @@ async def generate_custom_thumbnail(bot, update):
         )
 
 
-@pyrogram.Client.on_message(pyrogram.Filters.photo)
+@pyrogram.Client.on_message(pyrogram.filters.photo)
 async def save_photo(bot, update):
-    TRChatBase(update.from_user.id, update.text, "save_photo")
-    if str(update.from_user.id) in Config.BANNED_USERS:
-        await bot.send_message(
+    if update.from_user.id in Config.BANNED_USERS:
+        await bot.delete_messages(
             chat_id=update.chat.id,
-            text=Translation.ABUSIVE_USERS,
-            reply_to_message_id=update.message_id,
-            disable_web_page_preview=True,
-            parse_mode="html"
+            message_ids=update.message_id,
+            revoke=True
         )
         return
     if update.media_group_id is not None:
-        if str(update.from_user.id) not in Config.SUPER7X_DLBOT_USERS:
-            await bot.send_message(
-                chat_id=update.chat.id,
-                text=Translation.NOT_AUTH_USER_TEXT,
-                reply_to_message_id=update.message_id
-            )
-            return
         # album is sent
         download_location = Config.DOWNLOAD_LOCATION + "/" + str(update.from_user.id) + "/" + str(update.media_group_id) + "/"
         # create download directory, if not exist
@@ -127,16 +114,13 @@ async def save_photo(bot, update):
         )
 
 
-@pyrogram.Client.on_message(pyrogram.Filters.command(["deletethumbnail"]))
+@pyrogram.Client.on_message(pyrogram.filters.command(["deletethumbnail"]))
 async def delete_thumbnail(bot, update):
-    TRChatBase(update.from_user.id, update.text, "deletethumbnail")
-    if str(update.from_user.id) in Config.BANNED_USERS:
-        await bot.send_message(
+    if update.from_user.id in Config.BANNED_USERS:
+        await bot.delete_messages(
             chat_id=update.chat.id,
-            text=Translation.ABUSIVE_USERS,
-            reply_to_message_id=update.message_id,
-            disable_web_page_preview=True,
-            parse_mode="html"
+            message_ids=update.message_id,
+            revoke=True
         )
         return
     download_location = Config.DOWNLOAD_LOCATION + "/" + str(update.from_user.id)
@@ -150,31 +134,3 @@ async def delete_thumbnail(bot, update):
         text=Translation.DEL_ETED_CUSTOM_THUMB_NAIL,
         reply_to_message_id=update.message_id
     )
-
-@Client.on_message(filters.private & filters.command(["showthumb"]))
-async def show_thumb(bot, update):
-    thumb_image_path = Config.DOWNLOAD_LOCATION + "/" + str(update.from_user.id) + ".jpg"
-    if not os.path.exists(thumb_image_path):
-        mes = await thumb(update.from_user.id)
-        if mes != None:
-            m = await bot.get_messages(update.chat.id, mes.msg_id)
-            await m.download(file_name=thumb_image_path)
-            thumb_image_path = thumb_image_path
-        else:
-            thumb_image_path = None    
-
-    if thumb_image_path is not None:
-        try:
-            await bot.send_photo(
-                chat_id=update.chat.id,
-                photo=thumb_image_path
-            )
-        except:
-            pass
-
-    elif thumb_image_path is None:
-        await bot.send_message(
-            chat_id=update.chat.id,
-            text="no thumbnail found",
-            reply_to_message_id=update.message_id
-        )
