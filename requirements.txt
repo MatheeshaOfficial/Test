@@ -12,4 +12,6 @@ feedparser
 requests
 tgcrypto
 youtube-dl
+threading
+asyncio
 
